@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto Horizonte | A Bússola do Construtor</title>
+    <!-- Tailwind CSS para design moderno e rápido -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonte moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .gradient-text { background: linear-gradient(to right, #4ade80, #3b82f6); -webkit-background-clip: text; color: transparent; }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 16px; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); border-color: #4ade80; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- TELA INICIAL -->
+    <div id="tela-inicial" class="max-w-2xl text-center space-y-6">
+        <h1 class="text-4xl md:text-6xl font-extrabold gradient-text">Projeto Horizonte</h1>
+        <p class="text-xl text-slate-300">Você não está preenchendo um formulário. Você está iniciando uma conversa com o seu futuro.</p>
+        <div class="bg-slate-800 p-6 rounded-xl text-left space-y-3 border-l-4 border-green-400">
+            <p>✅ Descubra seus talentos ocultos</p>
+            <p>✅ Honre suas raízes para ir mais longe</p>
+            <p>✅ Trace um plano real para os próximos 5, 10 e 15 anos</p>
+        </div>
+        <button onclick="iniciarJornada()" class="bg-green-500 hover:bg-green-600 text-slate-900 font-bold py-4 px-8 rounded-full text-lg transition-all shadow-lg shadow-green-500/30">
+            Iniciar Minha Jornada 🚀
+        </button>
+    </div>
+
+    <!-- TELA DE PERGUNTAS -->
+    <div id="tela-perguntas" class="hidden max-w-2xl w-full space-y-6">
+        <div class="w-full bg-slate-700 rounded-full h-2.5">
+            <div id="barra-progresso" class="bg-green-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        
+        <div class="card p-8">
+            <h2 id="pergunta-titulo" class="text-2xl font-bold mb-4 text-white"></h2>
+            <div id="opcoes-container" class="space-y-3">
+                <!-- Opções serão injetadas via JavaScript -->
+            </div>
+            <textarea id="resposta-texto" class="hidden w-full bg-slate-900 border border-slate-600 rounded-lg p-4 text-white mt-4 focus:ring-2 focus:ring-green-500 outline-none" rows="4" placeholder="Escreva com o coração..."></textarea>
+        </div>
+
+        <div class="flex justify-between">
+            <button id="btn-anterior" onclick="perguntaAnterior()" class="text-slate-400 hover:text-white px-4 py-2">← Voltar</button>
+            <button id="btn-proximo" onclick="proximaPergunta()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-all">Próximo →</button>
+        </div</div>
+
+    <!-- TELA FINAL -->
+    <div id="tela-final" class="hidden max-w-2xl text-center space-y-6">
+        <div class="text-6xl">🎉</div>
+        <h2 class="text-3xl font-bold text-white">Jornada Concluída!</h2>
+        <p class="text-slate-300">Suas respostas foram salvas com sucesso. Você deu o primeiro passo para organizar sua energia e construir algo extraordinário.</p>
+        <button onclick="baixarRelatorio()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg transition-all">
+            📥 Baixar Meu Mapa de Ação (PDF/TXT)
+        </button>
+    </div>
+
+    <!-- SCRIPT DA LÓGICA -->
+    <script>
+        // Banco de Perguntas (Expanda conforme necessário)
+        const perguntas = [
+            {
+                tipo: "texto",
+                titulo: "🌳 Raízes: Pense no seu pai e na sua mãe. Qual é a FORÇA ou o PRESENTE que você recebeu de cada um deles que te trouxe até aqui?",
+                dica: "Ex: A resistência do meu pai, o cuidado da minha mãe..."
+            },
+            {
+                tipo: "opcao",
+                titulo: "⚙️ O Alquimista: Quando faltam recursos para fazer algo que você quer, o que você normalmente faz?",
+                opcoes: ["Desisto, não dá para fazer nada.", "Peço dinheiro para alguém comprar.", "Faço funcionar e crio algo incrível com o que tenho.", "Espero até ter tudo perfeito."]
+            },
+            {
+                tipo: "opcao",
+                titulo: "💰 O Mapa do Tesouro: Se você recebesse R$ 1.000,00 hoje, qual seria sua primeira atitude inteligente?",
+                opcoes: ["Gastaria tudo com lazer.", "Guardaria 100% debaixo do colchão.", "Investiria uma parte em uma ferramenta/curso para ganhar mais e guardaria o resto.", "Emprestaria para amigos."]
+            },
+            {
+                tipo: "texto",
+                titulo: "🚀 Visão 23 Anos: Imagine que você acordou em uma segunda-feira e você já tem 23 anos. O que você está fazendo da vida? Como você ganha dinheiro?",
+                dica: "Seja específico e sonhe alto."
+            }
+        ];
+
+        let indiceAtual = 0;
+        let respostas = {};
+
+        function iniciarJornada() {
+            document.getElementById('tela-inicial').classList.add('hidden');
+            document.getElementById('tela-perguntas').classList.remove('hidden');
+            carregarPergunta();
+        }
+
+        function carregarPergunta() {
+            const q = perguntas[indiceAtual];
+            document.getElementById('pergunta-titulo').innerText = q.titulo;
+            
+            // Atualizar barra de progresso
+            const progresso = ((indiceAtual + 1) / perguntas.length) * 100;
+            document.getElementById('barra-progresso').style.width = `${progresso}%`;
+
+            const containerOpcoes = document.getElementById('opcoes-container');
+            const areaTexto = document.getElementById('resposta-texto');
+            containerOpcoes.innerHTML = '';
+            
+            if (q.tipo === 'opcao') {
+                areaTexto.classList.add('hidden');
+                containerOpcoes.classList.remove('hidden');
+                q.opcoes.forEach(opcao => {
+                    const btn = document.createElement('button');
+                    btn.className = "card w-full text-left p-4 hover:bg-slate-700 transition-all text-slate-200";
+                    btn.innerText = opcao;
+                    btn.onclick = () => selecionarOpcao(opcao, btn);
+                    containerOpcoes.appendChild(btn);
+                });
+            } else {
+                containerOpcoes.classList.add('hidden');
+                areaTexto.classList.remove('hidden');
+                areaTexto.placeholder = q.dica || "Escreva sua resposta aqui...";
+                areaTexto.value = respostas[indiceAtual] || "";
+            }
+
+            // Controle do botão voltar
+            document.getElementById('btn-anterior').style.visibility = indiceAtual === 0 ? 'hidden' : 'visible';
+        }
+
+        function selecionarOpcao(valor, elementoBtn) {
+            respostas[indiceAtual] = valor;
+            // Feedback visual de seleção
+            const botoes = document.getElementById('opcoes-container').children;
+            for (let btn of botoes) { btn.classList.remove('border-green-500', 'bg-slate-700'); }
+            elementoBtn.classList.add('border-green-500', 'bg-slate-700');
+        }
+
+        function proximaPergunta() {
+            // Salvar resposta de texto se for o caso
+            if (perguntas[indiceAtual].tipo === 'texto') {
+                respostas[indiceAtual] = document.getElementById('resposta-texto').value;
+            }
+            
+            // Validação simples (obrigar a responder)
+            if (!respostas[indiceAtual]) {
+                alert("Por favor, responda à pergunta antes de continuar. Sua opinião é importante!");
+                return;
+            }
+
+            if (indiceAtual < perguntas.length - 1) {
+                indiceAtual++;
+                carregarPergunta();
+            } else {
+                finalizar();
+            }
+        }
+
+        function perguntaAnterior() {
+            if (indiceAtual > 0) {
+                indiceAtual--;
+                carregarPergunta();
+            }
+        }
+
+        function finalizar() {
+            document.getElementById('tela-perguntas').classList.add('hidden');
+            document.getElementById('tela-final').classList.remove('hidden');
+            // Salvar no navegador localmente (pode ser evoluído para Supabase depois)
+            localStorage.setItem('projetoHorizonteRespostas', JSON.stringify(respostas));
+        }
+
+        function baixarRelatorio() {
+            let textoRelatorio = "=== MEU MAPA DE AÇÃO - PROJETO HORIZONTE ===\n\n";
+            perguntas.forEach((q, i) => {
+                textoRelatorio += `PERGUNTA: ${q.titulo}\nRESPOSTA: ${respostas[i]}\n\n---\n\n`;
+            });
+            textoRelatorio += "\n'Eu acredito que minha vida pode se tornar extraordinária porque eu decidi tomar as rédeas do meu destino hoje.'";
+            
+            const blob = new Blob([textoRelatorio], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Meu_Mapa_de_Acao.txt';
+            a.click();
+        }
+    </script>
+</body>
+</html>
